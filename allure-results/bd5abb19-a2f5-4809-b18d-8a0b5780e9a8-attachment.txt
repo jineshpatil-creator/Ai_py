@@ -1,0 +1,22 @@
+========================================================================
+  AXE-CORE ACCESSIBILITY VIOLATION REPORT
+========================================================================
+
+  #1  landmark-one-main
+       Impact      : moderate
+       Description : Ensure the document has a main landmark
+       Help        : https://dequeuniversity.com/rules/axe/4.11/landmark-one-main?application=axeAPI
+       WCAG Tags   : cat.semantics, best-practice
+       Element 1: html
+         HTML     : <html lang="en">
+         → Document does not have a main landmark
+------------------------------------------------------------------------
+  #2  region
+       Impact      : moderate
+       Description : Ensure all page content is contained by landmarks
+       Help        : https://dequeuniversity.com/rules/axe/4.11/region?application=axeAPI
+       WCAG Tags   : cat.keyboard, best-practice, RGAAv4, RGAA-9.2.1
+       Element 1: div
+         HTML     : <div><h1>Example Domain</h1><p>This domain is for use in documentation examples without needing permission. Avoid use in operations.</p><p><a href="https://iana.org/domains/example">Learn more</a></p>
+         → Some page content is not contained by landmarks
+------------------------------------------------------------------------

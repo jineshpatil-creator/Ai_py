@@ -1,0 +1,25 @@
+Found 2 accessibility violations:
+Rule Violated:
+landmark-one-main - Ensure the document has a main landmark
+	URL: https://dequeuniversity.com/rules/axe/4.11/landmark-one-main?application=axeAPI
+	Impact Level: moderate
+	Tags: ['cat.semantics', 'best-practice']
+	Elements Affected:
+
+
+	1)	Target: html
+		Snippet: <html lang="en">
+		Messages:
+		* Document does not have a main landmark
+Rule Violated:
+region - Ensure all page content is contained by landmarks
+	URL: https://dequeuniversity.com/rules/axe/4.11/region?application=axeAPI
+	Impact Level: moderate
+	Tags: ['cat.keyboard', 'best-practice', 'RGAAv4', 'RGAA-9.2.1']
+	Elements Affected:
+
+
+	1)	Target: div
+		Snippet: <div><h1>Example Domain</h1><p>This domain is for use in documentation examples without needing permission. Avoid use in operations.</p><p><a href="https://iana.org/domains/example">Learn more</a></p></div>
+		Messages:
+		* Some page content is not contained by landmarks

@@ -1,0 +1,2 @@
+[33mWARNING [0m qa_framework:test_accessibility.py:192 [A11Y] [MODERATE] landmark-one-main: Ensure the document has a main landmark  (help: https://dequeuniversity.com/rules/axe/4.11/landmark-one-main?application=axeAPI)  (1 element affected)
+[33mWARNING [0m qa_framework:test_accessibility.py:192 [A11Y] [MODERATE] region: Ensure all page content is contained by landmarks  (help: https://dequeuniversity.com/rules/axe/4.11/region?application=axeAPI)  (1 element affected)

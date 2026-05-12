@@ -1,83 +1,141 @@
+# =============================================================================
+# Playwright AI-Powered QA Automation Pipeline
+# =============================================================================
+# Triggers: push/PR to main|master, or manual dispatch
+# Stack:    Python 3.12 · Playwright · Pytest · axe-core · Gemini AI · Allure
+# Reports:  Allure → GitHub Pages  |  HTML + Premium → Artifacts
+# =============================================================================
+
 name: Playwright AI Tests
 
+# ── Triggers ──────────────────────────────────────────────────────────────────
 on:
   push:
-    branches: [ main, master ]
+    branches: [main, master]
   pull_request:
-    branches: [ main, master ]
-  workflow_dispatch: # Allows manual trigger from the Actions tab
+    branches: [main, master]
+  workflow_dispatch: # Manual trigger from the Actions tab
 
-# Grant permissions for GitHub Pages deployment
+# ── Permissions ───────────────────────────────────────────────────────────────
+# Least-privilege: only what's needed for Pages deployment and artifact upload
 permissions:
   contents: write
   pages: write
 
+# ── Concurrency ───────────────────────────────────────────────────────────────
+# Cancel in-flight runs on the same branch to save runner minutes
+concurrency:
+  group: qa-${{ github.ref }}
+  cancel-in-progress: true
+
+# ── Environment Variables (non-secret, shared across all jobs) ────────────────
+env:
+  PYTHON_VERSION: "3.12"
+  ALLURE_RESULTS_DIR: allure-results
+  REPORTS_DIR: reports
+
 jobs:
+  # ═══════════════════════════════════════════════════════════════════════════
+  #  QA Test Execution
+  # ═══════════════════════════════════════════════════════════════════════════
   test:
-    name: Run QA Automation Suite
-    timeout-minutes: 15
+    name: "🧪 Run QA Automation Suite"
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    # ── Secret injection ────────────────────────────────────────────────────
+    # Secrets are injected at the JOB level so every step can access them.
+    # os.environ.get("GEMINI_API_KEY") in Python will resolve correctly.
+    # On PRs from forks, secrets are NOT available — AI tests will gracefully
+    # skip via the pytest.skip() guard in AIValidator.__init__().
+    env:
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
     steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v4
+      # ── 1. Checkout ─────────────────────────────────────────────────────
+      - name: "📥 Checkout Repository"
+        uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.12'
-        cache: 'pip'
+      # ── 2. Python Setup ─────────────────────────────────────────────────
+      - name: "🐍 Set up Python ${{ env.PYTHON_VERSION }}"
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: "pip"
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
+      # ── 3. Dependencies ─────────────────────────────────────────────────
+      - name: "📦 Install Python dependencies"
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          pip install -r requirements.txt
 
-    - name: Ensure browsers are installed
-      run: python -m playwright install
+      # ── 4. Playwright Browsers ──────────────────────────────────────────
+      # --with-deps installs OS-level libraries (libgbm, libnss3, etc.)
+      # required by Chromium/Firefox/WebKit on Ubuntu runners.
+      - name: "🌐 Install Playwright browsers + OS dependencies"
+        run: python -m playwright install --with-deps
 
-    - name: Run Pytest Suite
-      env:
-        GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-      run: |
-        python -m pytest tests/ --html=report.html --self-contained-html --alluredir=allure-results -v
+      # ── 5. Validate Secrets ─────────────────────────────────────────────
+      # Non-blocking check — logs a warning if the key is missing.
+      # AI tests will skip gracefully; pipeline won't fail.
+      - name: "🔑 Validate GEMINI_API_KEY availability"
+        run: |
+          if [ -z "$GEMINI_API_KEY" ]; then
+            echo "::warning::GEMINI_API_KEY is not set. AI-powered tests will be skipped."
+          else
+            echo "✅ GEMINI_API_KEY is configured (${#GEMINI_API_KEY} chars)"
+          fi
 
-    - name: Upload HTML Report
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: test-report
-        path: report.html
-        retention-days: 14
+      # ── 6. Run Tests ───────────────────────────────────────────────────
+      - name: "🧪 Execute Pytest Suite"
+        run: |
+          python -m pytest tests/ \
+            --html=report.html \
+            --self-contained-html \
+            --alluredir=${{ env.ALLURE_RESULTS_DIR }} \
+            -v
 
-    - name: Upload Premium Report
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: premium-report
-        path: reports/premium_report.html
-        retention-days: 14
+      # ── 7. Upload Artifacts (always, even on failure) ───────────────────
 
-    - name: Upload Allure Results
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: allure-results
-        path: allure-results/
-        retention-days: 14
+      - name: "📊 Upload HTML Test Report"
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: html-test-report
+          path: report.html
+          retention-days: 30
 
-    - name: Generate Allure Report
-      uses: simple-elf/allure-report-action@master
-      if: always()
-      with:
-        allure_results: allure-results
-        allure_history: allure-history
-        keep_reports: 20
+      - name: "💎 Upload Premium Dashboard Report"
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: premium-dashboard-report
+          path: ${{ env.REPORTS_DIR }}/premium_report.html
+          retention-days: 30
 
-    - name: Deploy Allure Report to GitHub Pages
-      uses: peaceiris/actions-gh-pages@v3
-      if: always() && github.ref == 'refs/heads/main'
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_branch: gh-pages
-        publish_dir: allure-history
+      - name: "📁 Upload Allure Results"
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: allure-results
+          path: ${{ env.ALLURE_RESULTS_DIR }}/
+          retention-days: 30
+
+      # ── 8. Allure Report Generation ─────────────────────────────────────
+      - name: "📈 Generate Allure Report"
+        uses: simple-elf/allure-report-action@v1.9
+        if: always()
+        with:
+          allure_results: ${{ env.ALLURE_RESULTS_DIR }}
+          allure_history: allure-history
+          keep_reports: 30
+
+      # ── 9. Deploy to GitHub Pages ───────────────────────────────────────
+      # Only on push to main (not PRs, not forks)
+      - name: "🚀 Deploy Allure Report to GitHub Pages"
+        uses: peaceiris/actions-gh-pages@v4
+        if: always() && github.ref == 'refs/heads/main' && github.event_name == 'push'
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: allure-history

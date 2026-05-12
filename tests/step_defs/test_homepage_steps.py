@@ -9,7 +9,7 @@ import pytest
 @allure.feature("BDD Visual Testing")
 @allure.story("Data-Driven AI Validation")
 @allure.severity(allure.severity_level.CRITICAL)
-@scenario('../../features/homepage.feature', 'Visual AI Validation across multiple websites')
+@scenario('homepage.feature', 'Visual AI Validation across multiple websites')
 def test_homepage_ai_validation():
     pass
 
