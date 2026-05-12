@@ -1,0 +1,34 @@
+from playwright.sync_api import sync_playwright
+from applitools.playwright import Eyes, VisualGridRunner, RunnerOptions
+
+def test_visual():
+    # Initialize runner (for parallel execution)
+    runner = VisualGridRunner(RunnerOptions().test_concurrency(1))
+    
+    # Initialize Eyes (Applitools)
+    eyes = Eyes(runner)
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=False)
+        page = browser.new_page()
+
+        # Start Applitools test
+        eyes.open(
+            page=page,
+            app_name="Demo App",
+            test_name="Login Page Visual Test"
+        )
+
+        # Navigate to website
+        page.goto("https://example.com")
+
+        # 👇 Visual checkpoint (IMPORTANT)
+        eyes.check("Homepage", fully=True)
+
+        # End test
+        eyes.close_async()
+        browser.close()
+
+    # Get results
+    results = runner.get_all_test_results(False)
+    print(results)
