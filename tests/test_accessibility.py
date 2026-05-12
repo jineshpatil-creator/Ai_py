@@ -22,12 +22,12 @@ def test_accessibility_compliance(page):
         results = axe.run(page)
 
     with allure.step("Evaluate violations"):
-        violations = results.violations
-        log.info(f"Found {len(violations)} accessibility violations.")
+       violations = results["violations"]
+       log.info(f"Found {len(violations)} accessibility violations.")
 
-        critical_violations = [v for v in violations if v["impact"] in ["critical", "serious"]]
+    critical_violations = [v for v in violations if v["impact"] in ["critical", "serious"]]
 
-        if critical_violations:
+    if critical_violations:
             log.error("CRITICAL Accessibility Violations Found:")
             violation_text = ""
             for violation in critical_violations:
